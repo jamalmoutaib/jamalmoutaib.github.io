@@ -3,6 +3,7 @@ title: "About"
 layout: "single"
 url: "/about/"
 summary: about
+description: "Senior Network Engineer and Network Team Lead writing real-incident networking content — BGP, SD-WAN, cloud, security, and automation."
 ---
 
 I help network teams design, automate, and operate enterprise infrastructure at scale.

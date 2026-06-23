@@ -2,13 +2,47 @@ baseURL = "https://jamalmoutaib.github.io/"
 languageCode = "en"
 title = "Network Authority"
 theme = "PaperMod"
+enableRobotsTXT = true
 
 [params]
 defaultTheme = "dark"
+description = "Practical, real-incident networking content for senior engineers and infrastructure leaders — BGP, SD-WAN, cloud networking, security, and automation, with working code, not vendor fluff."
+author = "Jamal Moutaib"
+keywords = ["networking", "BGP", "SD-WAN", "network automation", "Cisco", "network security", "cloud networking", "network engineering"]
 ShowReadingTime = true
 ShowShareButtons = true
 ShowPostNavLinks = true
 ShowCodeCopyButtons = true
+ShowWordCount = true
+ShowBreadCrumbs = true
+ShowToc = true
+mainSections = ["posts"]
+googleSiteVerification = ""
+
+  [params.homeInfoParams]
+    Title = "Network Authority"
+    Content = "I help network teams design, automate, and operate enterprise infrastructure at scale.\n\nReal incidents. Working code. No vendor fluff.\n\n**[Get the NetOps Script Library →](/resources/)** · **[Book a War Room session →](/resources/#work-with-me)**"
+
+  [[params.socialIcons]]
+    name = "linkedin"
+    url = "https://linkedin.com/in/jamal-moutaib"
+
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/jamalmoutaib"
+
+  [[params.socialIcons]]
+    name = "rss"
+    url = "index.xml"
+
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = true
+  [markup.highlight]
+    noClasses = false
+    codeFences = true
+    guessSyntax = true
+    style = "monokai"
 
 [menu]
 
