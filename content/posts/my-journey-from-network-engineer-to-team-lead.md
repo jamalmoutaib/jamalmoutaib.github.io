@@ -2,11 +2,13 @@
 title: "My Journey from Network Engineer to Team Lead"
 date: 2026-06-23
 draft: false
+categories: ["career"]
 tags:
   - networking
   - leadership
   - career
   - infrastructure
+summary: "What actually changes when you move from hands-on network engineering into a team lead role — beyond the meetings and the title."
 ---
 
 ## Introduction
