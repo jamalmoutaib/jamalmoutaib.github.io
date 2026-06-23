@@ -1,0 +1,18 @@
+baseURL = "https://jamalmoutaib.github.io/"
+languageCode = "en"
+title = "Network Authority"
+theme = "PaperMod"
+
+[params]
+defaultTheme = "dark"
+ShowReadingTime = true
+ShowShareButtons = true
+ShowPostNavLinks = true
+ShowCodeCopyButtons = true
+
+[menu]
+
+[[menu.main]]
+name = "Posts"
+url = "/posts/"
+weight = 1
