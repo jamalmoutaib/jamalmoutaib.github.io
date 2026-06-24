@@ -13,5 +13,5 @@ I'm Jamal Moutaib, a Senior Network Engineer and Network Team Lead with hands-on
 **Every article here is rooted in a real incident.** Identifying details — company names, IP addresses, hostnames, ticket numbers — are anonymized. The technical substance is not.
 
 **Connect:**
-- [LinkedIn](https://linkedin.com/in/jamal-moutaib)
+- [LinkedIn](https://linkedin.com/in/jamalmoutaib)
 - [GitHub](https://github.com/jamalmoutaib)
