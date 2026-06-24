@@ -22,6 +22,10 @@
 3. **Never report a publish as successful on `git push` alone.** Confirmed-but-not-persisted is exactly the failure mode already fixed in FAMO for FOUNDEVER-OS; the same discipline applies here. Success = all four phases in §3 pass, including the live HTTP check.
 4. **The site title is "The War Room — by Jamal Moutaib."** Resolved 2026-06-24 (was "Network Authority" — open flag now closed). Update hugo.toml `title` and `homeInfoParams.Title` if not already done.
 
+   *(Resolved 2026-06-24: site is now "The War Room" — by Jamal Moutaib. This rule stays here as a record of the discipline, not because the decision is still open.)*
+
+5. **Categories serve two axes — populate both, every technical post.** `categories` is being used for both content-type (`incident`, `career`, `architecture-decision`) and topic-pillar (`automation`, `cloud-networking`, `security`, `architecture`) — Hugo supports multiple categories per post, use both. The homepage's Featured Categories cards link to topic-pillar category pages specifically; a post tagged only `["incident"]` with no topic-pillar category is invisible to those cards even when it's squarely about that topic. Before publishing any technical post, confirm `categories` includes at least one of: `automation`, `cloud-networking`, `security`, `architecture` — in addition to, not instead of, any content-type category. Career/leadership posts are exempt; they aren't meant to map to a technical pillar.
+
 ## 2. One-time setup (run once; skip any step already done)
 
 ```bash
@@ -306,4 +310,5 @@ Walk `content/posts/`. Report only — take no corrective action without explici
 - Any `draft: true` post older than 14 days
 - Any post missing `summary`, `tags`, or `categories`
 - Post count per category
-- Whether hugo.toml title reflects "The War Room — by Jamal Moutaib" (resolved 2026-06-24)
+- Any technical post (not career/leadership) whose `categories` includes no topic-pillar value (`automation`, `cloud-networking`, `security`, `architecture`) — flag by title and current category, per Hard Rule 5
+- Whether any homepage Featured Categories card text is now stale: cross-check `public/categories/` against the four card lines in `hugo.toml`'s `homeInfoParams.Content` — a card reading "coming soon" for a pillar that now has content, or a card linking to a pillar that's actually still empty, is a defect either direction

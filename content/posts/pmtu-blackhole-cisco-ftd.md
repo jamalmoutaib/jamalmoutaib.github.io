@@ -2,7 +2,7 @@
 title: "Troubleshooting PMTU Black Holes on Cisco FTD: Syslog 602101, MSS Clamping, and VPN MTU Design"
 date: 2026-06-14
 draft: false
-categories: ["incident"]
+categories: ["incident", "security"]
 tags:
   - cisco-ftd
   - cisco-asa
