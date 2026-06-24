@@ -1,34 +1,3 @@
 {{- if .Site.Params.googleSiteVerification }}
 <meta name="google-site-verification" content="{{ .Site.Params.googleSiteVerification }}" />
 {{- end }}
-
-{{- if .IsHome }}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": {{ site.Title | jsonify }},
-  "url": {{ site.BaseURL | jsonify }},
-  "description": {{ site.Params.description | jsonify }}
-}
-</script>
-{{- end }}
-
-{{- if and .IsPage (eq .Type "posts") }}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "TechArticle",
-  "headline": {{ .Title | jsonify }},
-  "description": {{ (.Description | default .Summary) | jsonify }},
-  "datePublished": {{ .Date.Format "2006-01-02T15:04:05Z07:00" | jsonify }},
-  "dateModified": {{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" | jsonify }},
-  "author": {
-    "@type": "Person",
-    "name": "Jamal Moutaib",
-    "url": "https://jamalmoutaib.github.io/about/"
-  },
-  "url": {{ .Permalink | jsonify }}
-}
-</script>
-{{- end }}

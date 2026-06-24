@@ -4,6 +4,6 @@ date: 2026-06-23
 draft: false
 categories: ["automation"]
 tags: ["intro"]
-summary: "An introduction to the Network Authority blog — deep technical content from real network operations."
+summary: "An introduction to The War Room — real-incident networking content from Jamal Moutaib."
 ---
 Hello world — this is my new technical blog.

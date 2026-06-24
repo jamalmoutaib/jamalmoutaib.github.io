@@ -1,0 +1,10 @@
+/* The War Room — accent color: status amber, not corporate blue, not panic red */
+.entry-content a,
+.post-content a,
+.entry-header a:hover {
+    color: #e8a33d;
+}
+.entry-content a:hover,
+.post-content a:hover {
+    color: #f5b94f;
+}
