@@ -21,7 +21,7 @@ googleSiteVerification = ""
 
   [params.homeInfoParams]
     Title = "The War Room"
-    Content = "**by Jamal Moutaib** — Senior Network Engineer & Network Team Lead\n\nReal incidents. Working code. No vendor fluff.\n\n**[Get the NetOps Script Library →](/resources/)** · **[Book a War Room session →](/resources/#work-with-me)**\n\n---\n\n**Network Automation** — Python · Ansible · Netmiko · Nornir · GitOps → [Browse →](/categories/automation/)\n\n**Cloud Networking** — AWS · Azure · Hybrid Cloud · Transit Gateway → [Browse →](/categories/cloud-networking/)\n\n**Security** — Palo Alto · Fortinet · Zscaler · Zero Trust → [Browse →](/categories/security/)\n\n**Enterprise Architecture** — BGP · EVPN-VXLAN · SD-WAN · MPLS *(posts coming soon)*"
+    Content = "**by Jamal Moutaib** — Senior Network Engineer & Network Team Lead\n\nReal incidents. Working code. No vendor fluff.\n\n**[Get the NetOps Script Library →](/resources/)** · **[Book a War Room session →](/resources/#work-with-me)**\n\n---\n\n**Network Automation** — Python · Ansible · Netmiko · Nornir · GitOps *(posts coming soon)*\n\n**Cloud Networking** — AWS · Azure · Hybrid Cloud · Transit Gateway → [Browse →](/categories/cloud-networking/)\n\n**Security** — Palo Alto · Fortinet · Zscaler · Zero Trust → [Browse →](/categories/security/)\n\n**Enterprise Architecture** — BGP · EVPN-VXLAN · SD-WAN · MPLS *(posts coming soon)*"
 
   [[params.socialIcons]]
     name = "linkedin"

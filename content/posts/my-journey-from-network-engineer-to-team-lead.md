@@ -1,7 +1,7 @@
 ---
 title: "My Journey from Network Engineer to Team Lead"
 date: 2026-06-23
-draft: false
+draft: true
 categories: ["career"]
 tags:
   - networking

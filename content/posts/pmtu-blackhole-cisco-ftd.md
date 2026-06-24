@@ -14,6 +14,7 @@ tags:
   - firewall
   - mss-clamping
 summary: "TCP sessions establish but stall during data transfer on a Cisco FTD VPN deployment — tracing FTD 602101 events to a blocked ICMP Type 3 policy and a silent PMTU black hole."
+description: "Diagnosing a PMTU black hole on Cisco FTD: how blocked ICMP Type 3 messages silently break Path MTU Discovery, traced through syslog 602101, and the ICMP policy fix that resolved it."
 ---
 
 ## Introduction
