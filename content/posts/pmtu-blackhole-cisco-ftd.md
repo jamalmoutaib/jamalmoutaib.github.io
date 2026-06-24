@@ -37,19 +37,19 @@ Intended for: network engineers and firewall administrators managing Cisco FTD/A
 | Transport             | MPLS / VPN Infrastructure                  |
 | Source Network        | Internal LAN                               |
 | Destination Network   | Remote Site LAN                            |
-| Destination Interface | Port-channel2.351                          |
+| Destination Interface | <vpn_subinterface>                         |
 | Interface Name        | <vpn_interface>                            |
 
 Interface configuration:
 
 ```bash
-show running-config interface Port-channel2.351
+show running-config interface <vpn_subinterface>
 ```
 
 ```text
-interface Port-channel2.351
- description VL351-REMOTE-SITE
- vlan 351
+interface <vpn_subinterface>
+ description <vpn_site_description>
+ vlan <vpn_vlan_id>
  nameif <vpn_interface>
  security-level 0
 ```
