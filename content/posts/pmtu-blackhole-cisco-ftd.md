@@ -1,5 +1,5 @@
 ---
-title: "Troubleshooting PMTU Black Holes on Cisco FTD: FTD 602101, MSS Clamping, and VPN MTU Design"
+title: "Troubleshooting PMTU Black Holes on Cisco FTD: Syslog 602101, MSS Clamping, and VPN MTU Design"
 date: 2026-06-14
 draft: false
 categories: ["incident"]
@@ -38,7 +38,7 @@ Intended for: network engineers and firewall administrators managing Cisco FTD/A
 | Source Network        | Internal LAN                               |
 | Destination Network   | Remote Site LAN                            |
 | Destination Interface | Port-channel2.351                          |
-| Interface Name        | 275TOT3-DATA02                             |
+| Interface Name        | <vpn_interface>                            |
 
 Interface configuration:
 
@@ -50,7 +50,7 @@ show running-config interface Port-channel2.351
 interface Port-channel2.351
  description VL351-REMOTE-SITE
  vlan 351
- nameif <interface-name>
+ nameif <vpn_interface>
  security-level 0
 ```
 
@@ -76,6 +76,8 @@ prot=TCP
 ```
 
 This single log entry contains everything needed to understand the problem: the packet size, the effective MTU on the VPN path, and the affected flow.
+
+Note: the identical message and root cause apply on classic Cisco ASA appliances and on FTD code prior to release 6.3, where it appears with the legacy %ASA-6-602101 prefix. The troubleshooting steps below are the same on either platform.
 
 ---
 
