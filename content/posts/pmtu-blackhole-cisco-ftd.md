@@ -19,11 +19,13 @@ description: "Diagnosing a PMTU black hole on Cisco FTD: how blocked ICMP Type 3
 
 ## Introduction
 
-If you've ever seen TCP sessions establish cleanly but then stall or time out during actual data transfer — while pings pass and the VPN tunnel shows as up — you're likely dealing with a PMTU black hole. This is one of the most frustrating failure patterns in VPN environments: the infrastructure looks healthy, but applications silently break.
+TCP sessions up. Pings passing. VPN tunnel showing green. Applications broken.
 
-This article walks through a real-world investigation on a Cisco Secure Firewall Threat Defense (FTD) deployment where repeated `%FTD-6-602101` log events were the first clue that something was wrong with the VPN path. The root cause turned out to be ICMP Type 3 being blocked — silently preventing Path MTU Discovery from working and trapping the network in a black hole. It covers the full diagnostic process and the fix that actually resolved it.
+That's the PMTU black hole. There's no hard-down state to trace — the infrastructure looks healthy right up until you try to actually use it. Large transfers time out. Small ones succeed. The natural assumption is that something's wrong with the server or the application. The network team clears themselves early. And the problem keeps happening.
 
-Intended for: network engineers and firewall administrators managing Cisco FTD/ASA in VPN or MPLS environments.
+This article documents a real investigation on a Cisco Secure Firewall Threat Defense (FTD) deployment where repeated `%FTD-6-602101` events were the first signal that something was structurally wrong with the VPN path. The root cause: ICMP Type 3 blocked at the policy level, silently breaking the feedback loop that Path MTU Discovery depends on to self-correct.
+
+Intended for network engineers and firewall administrators managing Cisco FTD or ASA in VPN or MPLS environments.
 
 ---
 
@@ -38,8 +40,8 @@ Intended for: network engineers and firewall administrators managing Cisco FTD/A
 | Transport             | MPLS / VPN Infrastructure                  |
 | Source Network        | Internal LAN                               |
 | Destination Network   | Remote Site LAN                            |
-| Destination Interface | <vpn_subinterface>                         |
-| Interface Name        | <vpn_interface>                            |
+| Destination Interface | `<vpn_subinterface>`                       |
+| Interface Name        | `<vpn_interface>`                          |
 
 Interface configuration:
 
@@ -59,14 +61,14 @@ interface <vpn_subinterface>
 
 ## Problem Description
 
-Users reported intermittent application connectivity across VPN paths while alternative routes functioned normally. The symptoms were classic PMTU failure:
+Users reported intermittent application failures over VPN paths while alternative routes worked normally. The pattern was consistent:
 
-- TCP sessions established successfully but degraded or stalled during data transfer
-- Large file transfers timing out while small transactions worked fine
-- Ping and basic reachability tests passing — giving a false sense that the path was healthy
-- Application-layer failures that looked like server or application issues, not network
+- TCP sessions established but stalled or degraded during data transfer
+- Large file transfers timed out; small transactions went through
+- Pings passed — giving a misleading read on path health
+- Failures surfaced at the application layer, pointing away from the network
 
-The primary log message observed on the FTD:
+The log message appearing on the FTD:
 
 ```text
 %FTD-6-602101:
@@ -76,9 +78,9 @@ src_addr=<source_ip>,
 prot=TCP
 ```
 
-This single log entry contains everything needed to understand the problem: the packet size, the effective MTU on the VPN path, and the affected flow.
+That single entry contains the whole picture: packet size, effective MTU on the VPN path, and the affected flow. The gap is 52 bytes — invisible to basic connectivity tests, large enough to silently break any application relying on standard TCP segment sizes.
 
-Note: the identical message and root cause apply on classic Cisco ASA appliances and on FTD code prior to release 6.3, where it appears with the legacy %ASA-6-602101 prefix. The troubleshooting steps below are the same on either platform.
+Note: the same message and root cause appear on classic Cisco ASA appliances and on FTD code prior to 6.3, where the prefix reads `%ASA-6-602101`. The troubleshooting process below applies to either platform.
 
 ---
 
@@ -86,19 +88,21 @@ Note: the identical message and root cause apply on classic Cisco ASA appliances
 
 ### Step 1 — Parse the FTD 602101 Log
 
-The 602101 message tells a precise story. A TCP packet of 1400 bytes arrived at an interface whose effective MTU was only 1348 bytes.
+The 602101 message is precise: a 1400-byte TCP packet arrived at an interface with an effective MTU of 1348 bytes.
 
 ```text
 1400 - 1348 = 52 bytes over the limit
 ```
 
-Modern operating systems typically set the Don't Fragment (DF) bit on TCP traffic by default to support Path MTU Discovery. Because the DF bit is set, the FTD cannot fragment the oversized packet. It must drop it. The firewall is behaving correctly — the problem is upstream in the architecture.
+Modern operating systems set the Don't Fragment (DF) bit on TCP traffic by default — that's how Path MTU Discovery is supposed to work. With DF set, the FTD can't fragment the packet. It drops it. The firewall is doing exactly what it should. The problem is architectural.
 
 ---
 
 ### Step 2 — Determine Why the Effective MTU Is 1348
 
-Standard Ethernet MTU is 1500 bytes. The 1348-byte effective MTU reflects two combined factors: the underlying MPLS/VPN transport path, which was already running below the standard 1500-byte MTU, plus the additional overhead added by IPsec encapsulation on top of that. IPsec/NAT-T overhead alone typically only accounts for 80–90 bytes (1500 → ~1410–1420); a 152-byte reduction points to a sub-1500 MTU already present on the transport before encryption overhead is applied. Each encrypted packet carries additional headers that consume payload space:
+Standard Ethernet MTU is 1500 bytes. Getting from 1500 to 1348 takes two compounding factors: a transport path already running below standard MTU on the MPLS/VPN layer, then IPsec encapsulation overhead on top of that.
+
+IPsec/NAT-T alone typically costs 80–90 bytes (1500 → ~1410–1420). A 152-byte total reduction points to a sub-1500 transport MTU before any encryption overhead is applied.
 
 | Header                           | Approximate Overhead |
 | -------------------------------- | -------------------- |
@@ -106,13 +110,13 @@ Standard Ethernet MTU is 1500 bytes. The 1348-byte effective MTU reflects two co
 | UDP NAT-T Header                 | 8 bytes              |
 | ESP Header + Trailer + Auth Data | Variable             |
 
-The combined overhead on this tunnel reduces the usable MTU to 1348 bytes — meaning any payload larger than that cannot traverse the tunnel unmodified.
+The combined overhead on this tunnel sets the payload ceiling at 1348 bytes.
 
 ---
 
-### Step 3 — Understand PMTU Discovery and Why It Can Fail
+### Step 3 — Understand PMTU Discovery and Where It Breaks
 
-Path MTU Discovery (PMTU) is the mechanism that allows TCP hosts to self-correct their packet sizes:
+Path MTU Discovery is the self-correction mechanism that lets TCP hosts adapt to constrained paths:
 
 ```text
 Host sends 1400-byte packet
@@ -126,22 +130,22 @@ Host receives ICMP → reduces segment size
 Traffic flows correctly
 ```
 
-This works — unless ICMP Type 3 Code 4 is filtered or blocked anywhere in the path. When that happens, the host never learns the correct MTU, keeps sending 1400-byte packets, the FTD keeps dropping them, and applications appear broken. This is the **PMTU black hole**.
+It works — unless ICMP Type 3 Code 4 is filtered anywhere in the path. When it is, the host never gets the signal. It retransmits the same 1400-byte packet. The FTD drops it again. The loop repeats. This is the PMTU black hole: not a broken tunnel, but a severed feedback loop.
 
 ---
 
 ### Step 4 — Audit the ICMP Policy — Key Finding
 
-Reviewing the ICMP policy on the relevant interface revealed the problem. The policy only explicitly permitted echo and echo-reply:
+Reviewing the ICMP service policy on the VPN-facing interface showed the problem immediately. The policy permitted only:
 
 ```text
 service-object icmp echo
 service-object icmp echo-reply
 ```
 
-ICMP Unreachable (Type 3) was not included. This is the message type that carries the **Fragmentation Needed** signal (Code 4) — the exact feedback the FTD sends to source hosts when it drops an oversized packet.
+ICMP Unreachable (Type 3) wasn't there. That's the message type carrying the Fragmentation Needed signal (Code 4) — exactly what the FTD sends when it drops an oversized packet.
 
-Because Type 3 was blocked, the PMTU Discovery loop could never complete:
+Without it, the discovery loop had nowhere to go:
 
 ```text
 FTD drops oversized packet
@@ -157,40 +161,42 @@ Source host retransmits the same 1400-byte packet
 Loop repeats → PMTU Black Hole
 ```
 
-This confirmed the black hole. The VPN tunnel was healthy. The ICMP suppression was the failure.
+The VPN tunnel was healthy the entire time. The ICMP policy was the failure.
 
-This was corroborated with direct checks rather than relying on the ACL reading alone:
+This was verified through direct platform inspection, not just an ACL read:
 
 - `show interface <vpn_interface>` / `show running-config interface <vpn_interface>` — confirm interface MTU and config
-- `show crypto ipsec sa` — confirm the tunnel's negotiated path MTU and check for fragmentation counters
-- `show asp drop` — check for PMTU-exceeded / DF-set drop counters at the data-plane level
-- `packet-tracer input <inside_zone> tcp <src_ip> <src_port> <dst_ip> 443 detailed` — simulate the flow and confirm where in the policy pipeline the packet is evaluated
+- `show crypto ipsec sa` — confirm the tunnel's negotiated path MTU and check fragmentation counters
+- `show asp drop` — verify PMTU-exceeded / DF-set drops at the data-plane level
+- `packet-tracer input <inside_zone> tcp <src_ip> <src_port> <dst_ip> 443 detailed` — simulate the flow and trace it through the policy pipeline
 
 ---
 
 ### Step 5 — Apply Temporary Mitigation
 
-As an immediate workaround, the MTU on the source VLAN was reduced to 1200 bytes. This prevented hosts from generating packets larger than the tunnel MTU, which stopped the 602101 events.
+As an immediate workaround, the MTU on the source VLAN was reduced to 1200 bytes. This kept hosts from generating packets larger than the tunnel MTU, which stopped the 602101 events.
 
 **Effect:** Immediate symptom resolution.
 
-**Problem:** This lowered the MTU for all traffic on that VLAN — including flows that don't use the VPN — reducing efficiency globally. This is a valid emergency workaround, not a production solution.
+**Problem:** It lowered MTU for all traffic on that VLAN — including flows that never touch the VPN — degrading throughput globally. A valid emergency measure, not a production fix.
 
 ---
 
 ## Root Cause
 
-The root cause was ICMP Type 3 (Destination Unreachable — Fragmentation Needed) being blocked by the firewall's ICMP service policy. The IPsec VPN tunnel on the FTD had an effective MTU of 1348 bytes due to encapsulation overhead, while source hosts were generating standard 1400-byte TCP segments. When the FTD dropped those oversized packets, it attempted to return ICMP Type 3 Code 4 messages to notify the senders of the correct path MTU. Because the policy only permitted ICMP echo and echo-reply, those feedback messages were silently discarded. Source hosts never received the MTU signal, continued transmitting 1400-byte segments, and the firewall continued dropping them. The VPN tunnel itself was fully operational — the failure was entirely caused by suppressed ICMP feedback preventing Path MTU Discovery from completing.
+The ICMP service policy on the VPN-facing interface permitted echo and echo-reply but blocked Type 3 (Destination Unreachable — Fragmentation Needed). The IPsec VPN tunnel had an effective MTU of 1348 bytes from MPLS transport constraints plus encapsulation overhead. Source hosts were sending standard 1400-byte TCP segments with the DF bit set.
+
+When the FTD dropped those packets, it generated ICMP Type 3 Code 4 messages to signal the correct MTU back to the senders. Those messages hit the policy and were silently discarded. The hosts never adjusted. The firewall kept dropping. The tunnel was fully operational throughout — the failure was a blocked feedback loop that prevented Path MTU Discovery from ever completing.
 
 ---
 
 ## Resolution
 
-**Temporary workaround applied:** Source VLAN MTU reduced to 1200 bytes. This stopped the 602101 events by preventing hosts from generating packets larger than the tunnel MTU — but it degraded performance for all VLAN traffic and was not a sustainable fix.
+**Temporary workaround:** Source VLAN MTU reduced to 1200 bytes. Stopped the 602101 events by keeping packets under the tunnel ceiling. Not sustainable — affected all VLAN traffic.
 
-**Permanent fix — Permitting ICMP Type 3:**
+**Permanent fix — Permit ICMP Type 3:**
 
-The ICMP service policy was updated to explicitly allow ICMP Unreachable messages. The change was straightforward:
+The ICMP service policy was updated to explicitly allow ICMP Unreachable:
 
 **Before:**
 
@@ -207,26 +213,26 @@ service-object icmp echo-reply
 service-object icmp unreachable
 ```
 
-Once ICMP Type 3 Code 4 (Fragmentation Needed) messages could reach the source hosts, Path MTU Discovery operated as designed. Hosts received the MTU signal, self-adjusted their TCP segment sizes to fit within the 1348-byte effective tunnel MTU, and application traffic normalized. FTD 602101 events dropped to expected, self-correcting transient levels. The source VLAN MTU was then restored to 1500 bytes.
+Once ICMP Type 3 Code 4 messages could reach source hosts, Path MTU Discovery worked as designed. Hosts received the signal, reduced their TCP segment sizes to fit within 1348 bytes, and application traffic normalized. FTD 602101 events dropped to expected, transient levels. The source VLAN MTU was then restored to 1500 bytes.
 
 **No MSS clamping was required to resolve this incident.**
 
 ---
 
-> **Best Practice Note:** While fixing the ICMP policy resolved this case, TCP MSS clamping provides an additional layer of defense that makes your VPN path resilient even when ICMP is filtered by upstream or downstream devices outside your control:
+> **Best Practice Note:** Fixing the ICMP policy resolved this case. But TCP MSS clamping adds a layer of protection that holds even when ICMP is filtered by devices outside your control — upstream providers, transit networks, remote-site firewalls:
 >
 > ```bash
 > sysopt connection tcpmss 1308
 > ```
 >
-> Consider deploying both — they are complementary, not exclusive.
+> Deploy both. They address the same problem from different angles.
 
 ---
 
 ## Key Takeaways
 
-- **FTD 602101 is a symptom, not the root cause** — the FTD is dropping packets correctly; the investigation should focus on why PMTU Discovery isn't fixing the problem automatically.
-- **PMTU Discovery depends entirely on ICMP Type 3** — if Fragmentation Needed messages are blocked anywhere in the path, hosts never self-correct and a black hole develops silently.
-- **Always explicitly permit ICMP unreachable on VPN-facing interfaces** — echo and echo-reply alone are not enough. ICMP Type 3 is operationally critical.
-- **A healthy VPN tunnel does not mean healthy application traffic** — the tunnel can be fully up while TCP sessions stall, making this failure pattern easy to misdiagnose as an application or server issue.
-- **MSS clamping is a resilient complement** — it protects against MTU issues even when ICMP is filtered by devices outside your control, and should be standard practice on any VPN-facing interface.
+- **FTD 602101 is a symptom.** The firewall is dropping packets correctly. The question is why Path MTU Discovery isn't self-correcting.
+- **PMTU Discovery depends on ICMP Type 3.** Block Fragmentation Needed anywhere in the path and the feedback loop breaks silently.
+- **Echo and echo-reply are not enough.** ICMP Type 3 is operationally critical on any VPN-facing interface. Permit it explicitly.
+- **A healthy tunnel doesn't mean healthy application traffic.** TCP sessions can stall on a fully operational VPN — which is why this pattern gets misattributed to servers and applications.
+- **MSS clamping is resilient where ICMP isn't.** Standard complement on any VPN-facing interface.
