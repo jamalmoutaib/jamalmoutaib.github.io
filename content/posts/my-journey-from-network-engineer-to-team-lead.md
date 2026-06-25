@@ -11,44 +11,28 @@ tags:
 summary: "What actually changes when you move from hands-on network engineering into a team lead role — beyond the meetings and the title."
 ---
 
-## Introduction
+Most engineers assume leadership means more meetings and less technical work. That's not wrong — but it's not the hard part.
 
-This is not just a career update. It is a reflection on what actually changes when you move from a hands-on network engineering role into a leadership position.
+The hard part is that your impact is no longer directly visible. When you were an IC, you could look at a config and know whether it was right. As a team lead, what you produce is decisions, context, and conditions for other people to do good work. That's a different feedback loop, and it takes time to trust.
 
-## The Reality of the Transition
+## What actually changed
 
-Most engineers assume leadership is about:
+**Configuration to design thinking.** I stopped thinking about individual CLI commands and started thinking about systems — how decisions made today create constraints six months from now.
 
-- More meetings
-- Less technical work
-- Delegation
+**Fixing issues to preventing them.** The shift isn't just philosophical. It's about where you invest time: less in being the fastest troubleshooter in the room, more in documentation, runbooks, and architectures that don't need a hero to operate.
 
-The reality is different. It is about:
+**Individual contributor to force multiplier.** My output is no longer what I personally configure. It's what the team can deliver consistently, without me being the bottleneck.
 
-- Making architectural decisions under uncertainty
-- Translating business needs into network design
-- Owning outcomes, not configurations
+## What I didn't expect
 
-## What Changed for Me
-
-### 1. From Configuration to Design Thinking
-
-I stopped thinking in CLI commands and started thinking in systems.
-
-### 2. From Fixing Issues to Preventing Them
-
-The focus shifted from troubleshooting to building resilient architectures.
-
-### 3. From Individual Contributor to Force Multiplier
-
-My impact is no longer what I configure, but what my team can deliver consistently.
-
-## Lessons Learned
+<!-- Jamal: this section is where the real article lives. What surprised you? What was harder than expected? What was a mistake? What would you tell yourself before the transition? Replace the bullet scaffold below with actual experience. -->
 
 - Technical excellence is necessary but not sufficient
-- Communication is a core engineering skill
-- Documentation is architecture
+- Communication is a core engineering skill, not a soft skill adjacent to the real work
+- Documentation is architecture — it determines what future-you and your team can actually build on
 
-## Closing Thought
+## Closing
 
-Becoming a team lead did not make me less of an engineer. It made me responsible for engineering at scale.
+Becoming a team lead didn't make me less of an engineer. It made me responsible for engineering at scale.
+
+<!-- draft note: this post needs real specifics before publish — incidents, decisions, mistakes, constraints. The structure is here; the voice isn't yet. -->
