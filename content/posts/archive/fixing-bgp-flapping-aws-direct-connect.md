@@ -1,7 +1,7 @@
 ---
 title: "Fixing BGP Flapping Over AWS Direct Connect: A Root-Cause Checklist for Hybrid Cloud Network Engineers"
 date: 2026-06-23
-draft: false
+draft: true
 categories: ["cloud-networking"]
 tags: ["bgp", "aws", "direct-connect", "hybrid-cloud", "troubleshooting", "automation"]
 summary: "A systematic, ordered checklist for diagnosing intermittent BGP flapping over AWS Direct Connect — BFD, timers, MTU, physical layer, and the AWS-side checks vendor docs don't walk you through."
