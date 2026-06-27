@@ -317,19 +317,26 @@ Walk `content/posts/`. Report only — take no corrective action without explici
 
 A second drafting mode, distinct from the first-person incident pipeline. Use it when the goal is a sourced technical walkthrough of a known problem rather than a war story Jamal personally lived. JAMO writes the full body in this mode and does **not** ask Jamal for lived-experience input — that's the whole point of the command.
 
-**The one hard rule of this mode: trusted sources only.**
+**Hard rule 1 of this mode: trusted sources only.**
 - Facts, values, CLI/config, log output, and protocol behavior must each trace to an authoritative source: an RFC/IETF document, official vendor documentation (Cisco, Arista, Juniper, Palo Alto, etc.), or official OS networking docs.
-- Community/forum/personal-blog material (Cisco Community, ipSpace.net, Stack Exchange, etc.) may be used **only** when clearly labeled in-text as a field report / account, never stated as protocol fact. Quote it as "a documented field report from <source>," with attribution.
-- Anything that can't be sourced does not go in. No invented values, no plausible-sounding output, no composite "typical" numbers presented as real.
+- Community/forum/personal-blog material (Cisco Community, ipSpace.net, Stack Exchange, etc.) may be used **only** as a labeled field report, never as protocol fact, and it must still appear in the Sources footer (see hard rule 3).
+- Anything that can't be sourced does not go in. No invented values, no plausible-sounding output, no composite "typical" numbers presented as real. This rule is absolute and is not relaxed by the voice/no-scaffolding rules below.
+
+**Hard rule 2 of this mode: do not claim the sourced case as a personally-lived incident.**
+The body is written in Jamal's voice and reads as his own writing (that's the point — see workflow step 3). But it must not assert that Jamal personally diagnosed/fixed *this specific sourced case* — no invented "at 2am I noticed…" narrative wrapped around someone else's documented incident. Write it as Jamal's own explanation/analysis of the problem, not as his war story. This keeps the About-page promise ("every article is rooted in a real incident") honest: explainer posts are knowledge pieces, which is why they're tagged `explainer`, not `incident`.
+
+**Hard rule 3 of this mode: keep a Sources footer.**
+No in-text source scaffolding is required (and is discouraged — see step 3), but every explainer post ends with one unobtrusive Sources line/section linking each authoritative source and any labeled field report used. This is non-negotiable: it's what makes "trusted sources only" verifiable and protects against an appropriation/plagiarism complaint. It can be a single italic line at the foot, matching the house style.
 
 **Workflow:**
 1. Research from authoritative sources (same source-quality bar as the blog-article-pipeline Stage 1). Search the web; do not rely on training memory for values, commands, or log formats.
 2. Pick one or more *documented public cases* with concrete values and real output. Prefer a vendor's own reproduced case (e.g. a Cisco TAC document) as the spine; a named engineer's published field account makes a strong contrast/edge-case section.
-3. Write the full body around those cases. Defaults that protect the blog's credibility (keep unless Jamal says otherwise):
-   - **Third-person framing** — never "I diagnosed this." Use "Cisco's documented recreation shows…", "a field report from <source> describes…".
-   - **A one-line sourcing note at the top** stating the post is built from documented public cases, not a first-person incident.
-   - **Inline citations** for quoted output/values, and a Sources line at the foot linking each source.
-4. Front matter: `draft: true` (publishing still goes through §3 `publish post`). Categories follow Hard Rule 5 (both axes). Suggested content-type value for this mode: `explainer` — keeps these visibly distinct from `incident` posts. (If `explainer` should become a real homepage pillar, that's a deliberate hugo.toml card change to raise first, per the dual-axis rule.)
+3. Write the full body in **Jamal's voice**, as if he wrote it himself:
+   - **No in-text source scaffolding.** Do NOT write "Cisco's documented recreation shows…" or "a field report from <source> describes…" in the prose. State the mechanics, values, and output directly and confidently, the way Jamal would explain them.
+   - **No top-of-post sourcing note.** The article opens straight into the content.
+   - **First-person is fine** for analysis and explanation ("the asymmetry is the fingerprint here," "what I'd check first is…"), but NOT for a fabricated personal-incident narrative around the sourced case (hard rule 2).
+   - Source attribution lives only in the **Sources footer** (hard rule 3), not woven through the body.
+4. Front matter: `draft: true` (publishing still goes through §3 `publish post`). Categories follow Hard Rule 5 (both axes). Content-type value for this mode: **`explainer`** — keeps these visibly distinct from `incident` posts. (If `explainer` should become a real homepage pillar, that's a deliberate hugo.toml card change to raise first, per the dual-axis rule.)
 5. Produce the file at `content/posts/[slug].md` and stop. Do not flip `draft: false`.
 
-This mode does not replace `new post` / the incident pipeline; it sits alongside it. When in doubt about which Jamal wants, ask once — but within `draft explainer`, do not gate on lived-experience input.
+This mode does not replace `new post` / the incident pipeline; it sits alongside it. Within `draft explainer`, do **not** gate on lived-experience input — research, write, and hand back the finished draft.

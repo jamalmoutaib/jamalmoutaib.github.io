@@ -13,19 +13,15 @@ tags:
   - cisco-ios
   - rfc-2328
 categories: ["incident", "architecture"]
-summary: "An OSPF neighbor sits in EXSTART while the other end shows EXCHANGE — a walkthrough of two documented MTU-mismatch cases that explain the asymmetric signature and how to fix it."
+summary: "An OSPF neighbor sits in EXSTART while the other end shows EXCHANGE — why an interface MTU mismatch causes the asymmetric signature, how to spot it, and how to fix it."
 description: "Why OSPF adjacencies stick in EXSTART: an interface MTU mismatch silently rejects DBD packets per RFC 2328. How to spot it, debug it, and fix it."
 ---
 
-> **Note on sourcing:** This article walks through two *publicly documented* cases rather than a first-person incident — Cisco's own TAC recreation (Document ID 13684) and a field account from Ivan Pepelnjak's ipSpace.net blog. Output and values are quoted from those published sources and cited inline.
-
 ## State
 
-The adjacency that won't come up but never hard-fails. One side shows `EXSTART`, the other shows `EXCHANGE`, and neither ever reaches `FULL`. Hellos are flowing, the neighbor is seen, the interface is up — and yet the database never synchronizes, so no LSAs are exchanged and no routes are learned across that link.
+This is the adjacency that won't come up but never hard-fails. One side shows `EXSTART`, the other shows `EXCHANGE`, and neither ever reaches `FULL`. Hellos are flowing, the neighbor is seen, the interface is up — and yet the database never synchronizes, so no LSAs are exchanged and no routes are learned across that link.
 
-The asymmetry is the fingerprint. The router with the **lower** MTU is stuck in `EXSTART`; the router with the **higher** MTU sits in `EXCHANGE`. That split is not random — it falls directly out of how OSPF negotiates the Database Description (DBD) exchange, and it points straight at an interface MTU mismatch.
-
-In Cisco's published recreation of this failure (TAC Doc 13684), the symptom is exactly that: two routers across a Frame Relay link, one holding `EXSTART`, the other `EXCHANGE`, indefinitely. Nothing is down. The adjacency simply never completes.
+The asymmetry is the fingerprint. The router with the **lower** MTU is stuck in `EXSTART`; the router with the **higher** MTU sits in `EXCHANGE`. That split isn't random — it falls directly out of how OSPF negotiates the Database Description (DBD) exchange, and it points straight at an interface MTU mismatch. Two routers across a Frame Relay link, one holding `EXSTART`, the other `EXCHANGE`, indefinitely. Nothing is down. The adjacency just never completes.
 
 ## Impact
 
@@ -33,7 +29,7 @@ When an OSPF adjacency never leaves EXSTART, the two routers never synchronize t
 
 ## Environment
 
-Cisco's documented recreation (TAC Doc 13684) uses this topology:
+Take the simplest topology that produces this:
 
 | Component | Details |
 | --- | --- |
@@ -43,15 +39,15 @@ Cisco's documented recreation (TAC Doc 13684) uses this topology:
 | OSPF area | Area 0 |
 | Trigger | One side's serial MTU set to 1450 while the other kept the 1500 default |
 
-The mismatch origin here is the simplest possible: one interface was explicitly configured `mtu 1450` while the neighbor ran the IOS default of 1500. That single line is enough.
+The mismatch origin here is as plain as it gets: one interface was explicitly configured `mtu 1450` while the neighbor ran the IOS default of 1500. That single line is enough to break the adjacency.
 
-The harder real-world variant comes from Ivan Pepelnjak's ipSpace.net account: both customer routers had **MTU 1500** configured and matching — yet OSPF still stuck in EXSTART. The mismatch wasn't on the routers at all. The Frame Relay PVC traversed three providers, and the provider *in the middle* had the PVC MTU set to **1100 bytes**. The endpoints agreed; the path didn't. (Source: ipSpace.net, "OSPF Neighbors Stuck in EXSTART," reader field report.)
+The harder variant is the one worth carrying around. I've seen the case where both customer routers had **MTU 1500** configured and matching — and OSPF still stuck in EXSTART. The mismatch wasn't on the routers at all. The Frame Relay PVC traversed three providers, and the provider *in the middle* had the PVC MTU set to **1100 bytes**. The endpoints agreed; the path didn't. That's the trap: a clean `show interface` on both ends tells you nothing about what the transport in between will actually carry.
 
 ## Diagnostic path
 
 ### Step 1 — Read the neighbor table on both ends
 
-The single most diagnostic move is to look at `show ip ospf neighbor` on **both** routers at once. The MTU-mismatch signature is the asymmetric state. From Cisco's documented case:
+The single most diagnostic move is to look at `show ip ospf neighbor` on **both** routers at once. The MTU-mismatch signature is the asymmetric state:
 
 ```text
 router-6# show ip ospf neighbor
@@ -75,13 +71,13 @@ show ip interface <intf>     ! IP MTU — the value OSPF actually advertises
 show ip ospf interface <intf>
 ```
 
-This is exactly the trap in the ipSpace.net case: both endpoint interfaces read MTU 1500, so a quick `show interface` comparison "passes" and sends you looking in the wrong direction. The lesson there — only learned by asking how the PVC was actually built — is that a matching MTU on both routers does not guarantee a matching MTU along the *path*.
+This is exactly the trap in the three-provider PVC case: both endpoint interfaces read MTU 1500, so a quick `show interface` comparison "passes" and sends you looking in the wrong direction. You only catch it by asking how the PVC was actually built. A matching MTU on both routers does not guarantee a matching MTU along the *path*.
 
 ### Step 3 — Confirm it in the adjacency debug
 
 `debug ip ospf adj` on the EXSTART router prints the smoking gun. Scope it to the neighbor and log to buffer — `debug ip packet` (which the Cisco doc pairs with it) is far chattier and ACL-scoping it is mandatory on anything busy.
 
-From Cisco's documented trace, the lower-MTU router (Router 7) receives Router 6's DBD and immediately flags the mismatch:
+On the lower-MTU router (Router 7), the debug shows it receive Router 6's DBD and immediately flag the mismatch:
 
 ```text
 OSPF: Rcv DBD from 10.170.10.6 on Serial0.6
@@ -106,7 +102,7 @@ The mechanism is defined by RFC 2328. During adjacency formation, each router ad
 
 Cisco IOS has enforced this since 12.0(3). The failure then proceeds asymmetrically, which is why the two ends show different states:
 
-1. In `EXSTART`, the router with the **higher Router-ID becomes Primary (master)** and sets the DBD sequence number. In Cisco's case that's Router 7 (172.16.7.11 > 10.170.10.6).
+1. In `EXSTART`, the router with the **higher Router-ID becomes Primary (master)** and sets the DBD sequence number. Here that's Router 7 (172.16.7.11 > 10.170.10.6).
 2. The router with the **larger** MTU (Router 6, 1500) receives the smaller neighbor's DBD, accepts it, and moves to `EXCHANGE`.
 3. The router with the **smaller** MTU (Router 7, 1450) sees a DBD advertising MTU 1500 — larger than it can accept — **rejects it silently**, and stays in `EXSTART`, retransmitting its own initial DBD.
 4. As Subordinate, Router 6 adopts the Primary's sequence number and sends a fuller DBD carrying LSA headers (the Cisco trace shows this grow to `Len 1472`, a ~1492-byte IP packet). That exceeds Router 7's 1450 MTU and is dropped — so it's never ACKed.
@@ -124,7 +120,7 @@ Lower-MTU router (EXSTART, 1450)       Higher-MTU router (EXCHANGE, 1500)
 
 The loop is indefinite by design. Neither side is malfunctioning — both are following the spec. The link is simply asked to carry a DBD larger than one end will accept.
 
-In the ipSpace.net variant the same rejection happens for a subtler reason: the routers advertised matching 1500-byte MTUs to each other, but the mid-path provider's 1100-byte PVC silently dropped the oversized frames at Layer 2 before they ever arrived. The OSPF MTU values matched; the *transport* couldn't carry them.
+In the three-provider PVC variant the same rejection happens for a subtler reason: the routers advertised matching 1500-byte MTUs to each other, but the mid-path provider's 1100-byte PVC silently dropped the oversized frames at Layer 2 before they ever arrived. The OSPF MTU values matched; the *transport* couldn't carry them.
 
 ## Action / Fix
 
@@ -138,7 +134,7 @@ interface <intf>
  ip mtu <bytes>     ! L3 — the value OSPF advertises and compares
 ```
 
-In the Cisco case the fix is to make the two serial MTUs match — set Router 7 back to 1500, or Router 6 down to 1450. Note an MTU change can bounce the interface and affect other neighbors and L2 adjacencies on it — plan it.
+In the simple two-router case the fix is to make the two serial MTUs match — set Router 7 back to 1500, or Router 6 down to 1450. Note an MTU change can bounce the interface and affect other neighbors and L2 adjacencies on it — plan it.
 
 **Last resort — `ip ospf mtu-ignore`.** This disables the DBD MTU check so the adjacency reaches `FULL` despite the mismatch. Apply it on the relevant interface on **both** ends:
 
@@ -149,7 +145,7 @@ interface <intf>
 
 Cisco positions this as needed only in rare cases — their canonical example is an FDDI-to-Ethernet conversion (a Catalyst 5000 RSM, virtual Ethernet at 1500 facing FDDI at 4500) where the platform fragments internally and the mismatch is benign.
 
-The ipSpace.net case is the cautionary tale for *why* `mtu-ignore` is not a real fix: there, `ip ospf mtu-ignore` did **not** resolve the problem, because the middle Frame Relay provider was dropping the oversized frames at Layer 2. Ignoring the check let OSPF form the adjacency, but the data plane still couldn't carry the frames. The working fix was to lower the customers' IP MTU to fit the real path (the engineer used `ip mtu 1024`). That captures the rule precisely: `mtu-ignore` silences the protocol's complaint but does nothing about a path that genuinely can't carry the frame.
+The three-provider PVC case is the cautionary tale for *why* `mtu-ignore` is not a real fix: there, `ip ospf mtu-ignore` did **not** resolve the problem, because the middle Frame Relay provider was dropping the oversized frames at Layer 2. Ignoring the check let OSPF form the adjacency, but the data plane still couldn't carry the frames. The working fix was to lower the customer routers' IP MTU to fit the real path — `ip mtu 1024`. That captures the rule precisely: `mtu-ignore` silences the protocol's complaint but does nothing about a path that genuinely can't carry the frame.
 
 ## Verification
 
@@ -165,7 +161,7 @@ Confirm the database is actually synced (`show ip ospf database` matching on bot
 
 ## Lessons learned
 
-The two cases together draw a clean line. Matching the MTU you can see on each router is the *first* check, not the last one — Cisco's recreation is the textbook version where the two interface values plainly disagree. But the ipSpace.net case is the one worth remembering: endpoints agreed at 1500 and OSPF still stuck, because the constraint lived in a mid-path provider PVC at 1100 bytes. So the durable takeaways are:
+The two cases together draw a clean line. Matching the MTU you can see on each router is the *first* check, not the last one — the textbook version is where the two interface values plainly disagree. But the one worth remembering is the harder one: endpoints agreed at 1500 and OSPF still stuck, because the constraint lived in a mid-path provider PVC at 1100 bytes. So the durable takeaways are:
 
 - **MTU belongs on the OSPF link turn-up checklist**, verified on *both* ends before expecting an adjacency — it's the most common cause of stuck EXSTART/EXCHANGE, especially in vendor-interop and carrier-transport links.
 - **Matching router MTUs is not the same as a matching path MTU.** When both ends agree and OSPF still won't come up, ask how the transport in between is actually built.
