@@ -1,3 +1,6 @@
 /public/
 /resources/_gen/
 .hugo_build.lock
+
+# Research sidecars — never published
+content/posts/*.research.md
