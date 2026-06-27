@@ -10,7 +10,7 @@ description: "The War Room — Jamal Moutaib, Senior Network Engineer and Networ
 
 I'm Jamal Moutaib, a Senior Network Engineer and Network Team Lead with hands-on experience designing, operating, and troubleshooting enterprise networks across routing and switching, security, SD-WAN, cloud connectivity, and automation. Currently pursuing CCNP Enterprise.
 
-**Every article here is rooted in a real incident.** Identifying details — company names, IP addresses, hostnames, ticket numbers — are anonymized. The technical substance is not.
+**Most of what I write here starts with a real incident** — a failure I worked, with a root cause and a fix. Some posts are deep dives on a specific protocol failure mode instead, built from the authoritative sources and documented cases. Either way, the technical substance is real; identifying details — company names, IP addresses, hostnames, ticket numbers — are anonymized.
 
 **Connect:**
 - [LinkedIn](https://linkedin.com/in/jamalmoutaib)
