@@ -1,6 +1,6 @@
 ---
 title: "Fixing BGP Flapping Over AWS Direct Connect: A Root-Cause Checklist for Hybrid Cloud Network Engineers"
-date: 2026-06-23
+date: 2026-05-17
 draft: false
 categories: ["cloud-networking"]
 tags: ["bgp", "aws", "direct-connect", "hybrid-cloud", "troubleshooting", "automation"]

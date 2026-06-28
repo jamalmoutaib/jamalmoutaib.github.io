@@ -1,6 +1,6 @@
 ---
 title: "OSPF Adjacency Stuck in EXSTART: How an MTU Mismatch Silently Breaks the DBD Exchange"
-date: 2026-06-27
+date: 2026-05-24
 draft: false
 tags:
   - ospf

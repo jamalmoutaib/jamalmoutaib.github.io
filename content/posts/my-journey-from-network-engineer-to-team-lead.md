@@ -1,6 +1,6 @@
 ---
 title: "My Journey from Network Engineer to Team Lead"
-date: 2026-06-23
+date: 2026-05-04
 draft: true
 categories: ["career"]
 tags:
